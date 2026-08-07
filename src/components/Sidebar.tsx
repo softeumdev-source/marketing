@@ -10,6 +10,7 @@ const NAV = [
   { href: '/accounts', label: 'Contas Gmail', icon: '📮' },
   { href: '/caixa-respondidos', label: 'Responderam', icon: '💬' },
   { href: '/caixa-invalidos', label: 'Inválidos', icon: '⛔' },
+  { href: '/descadastrados', label: 'Descadastrados', icon: '🚫' },
 ];
 
 export default function Sidebar({ email }: { email: string }) {
