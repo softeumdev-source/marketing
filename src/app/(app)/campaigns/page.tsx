@@ -15,12 +15,17 @@ export default async function CampaignsPage() {
   const { data: stats } = await supabase.from('mail_campaign_stats').select('*');
   const statMap = new Map((stats ?? []).map((s: any) => [s.campaign_id, s]));
 
+  const { data: accounts } = await supabase
+    .from('mail_gmail_accounts')
+    .select('id,email,status')
+    .order('created_at', { ascending: true });
+
   return (
     <div>
       <PageHeader
         title="Campanhas"
         subtitle="Cada campanha tem sua própria lista. Um email nunca se repete entre campanhas."
-        action={<NewCampaign />}
+        action={<NewCampaign accounts={accounts ?? []} />}
       />
 
       {(campaigns ?? []).length === 0 ? (

@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function NewCampaign() {
+type AccountOpt = { id: string; email: string; status: string };
+
+export default function NewCampaign({ accounts = [] }: { accounts?: AccountOpt[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -16,6 +18,7 @@ export default function NewCampaign() {
     daily_limit: 200,
     send_interval_seconds: 90,
     track_opens: true,
+    gmail_account_id: '',
   });
 
   function set<K extends keyof typeof form>(k: K, v: (typeof form)[K]) {
@@ -62,6 +65,15 @@ export default function NewCampaign() {
               <div>
                 <label className="label">Nome do remetente</label>
                 <input className="input" value={form.from_name} onChange={(e) => set('from_name', e.target.value)} placeholder="Softeum" />
+              </div>
+              <div>
+                <label className="label">Enviar por qual conta Gmail?</label>
+                <select className="input" value={form.gmail_account_id} onChange={(e) => set('gmail_account_id', e.target.value)}>
+                  <option value="">Distribuir entre todas as contas ativas</option>
+                  {accounts.filter((a) => a.status === 'active').map((a) => (
+                    <option key={a.id} value={a.id}>{a.email}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="label">Mensagem (use {'{{nome}}'}, {'{{primeiro_nome}}'})</label>

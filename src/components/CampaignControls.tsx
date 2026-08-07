@@ -12,17 +12,22 @@ type Campaign = {
   daily_limit: number;
   send_interval_seconds: number;
   track_opens: boolean;
+  gmail_account_id: string | null;
   status: string;
 };
+
+type AccountOpt = { id: string; email: string; status: string };
 
 export default function CampaignControls({
   campaign,
   pending,
   sentCount,
+  accounts = [],
 }: {
   campaign: Campaign;
   pending: number;
   sentCount: number;
+  accounts?: AccountOpt[];
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -84,12 +89,12 @@ export default function CampaignControls({
         Excluir
       </button>
 
-      {editing && <EditModal campaign={campaign} onClose={() => setEditing(false)} />}
+      {editing && <EditModal campaign={campaign} accounts={accounts} onClose={() => setEditing(false)} />}
     </div>
   );
 }
 
-function EditModal({ campaign, onClose }: { campaign: Campaign; onClose: () => void }) {
+function EditModal({ campaign, accounts, onClose }: { campaign: Campaign; accounts: AccountOpt[]; onClose: () => void }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -101,6 +106,7 @@ function EditModal({ campaign, onClose }: { campaign: Campaign; onClose: () => v
     daily_limit: campaign.daily_limit,
     send_interval_seconds: campaign.send_interval_seconds,
     track_opens: campaign.track_opens,
+    gmail_account_id: campaign.gmail_account_id || '',
   });
 
   function set<K extends keyof typeof form>(k: K, v: (typeof form)[K]) {
@@ -142,6 +148,15 @@ function EditModal({ campaign, onClose }: { campaign: Campaign; onClose: () => v
           <div>
             <label className="label">Nome do remetente</label>
             <input className="input" value={form.from_name} onChange={(e) => set('from_name', e.target.value)} />
+          </div>
+          <div>
+            <label className="label">Enviar por qual conta Gmail?</label>
+            <select className="input" value={form.gmail_account_id} onChange={(e) => set('gmail_account_id', e.target.value)}>
+              <option value="">Distribuir entre todas as contas ativas</option>
+              {accounts.filter((a) => a.status === 'active').map((a) => (
+                <option key={a.id} value={a.id}>{a.email}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="label">Mensagem (use {'{{nome}}'}, {'{{primeiro_nome}}'})</label>

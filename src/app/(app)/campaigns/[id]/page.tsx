@@ -33,6 +33,14 @@ export default async function CampaignDetail({ params }: { params: { id: string 
     .order('created_at', { ascending: true })
     .limit(500);
 
+  const { data: accounts } = await supabase
+    .from('mail_gmail_accounts')
+    .select('id,email,status')
+    .order('created_at', { ascending: true });
+  const sendAccount = campaign.gmail_account_id
+    ? (accounts ?? []).find((a) => a.id === campaign.gmail_account_id)?.email || 'conta removida'
+    : 'Todas as contas ativas';
+
   const stat = (label: string, value: any, cls = 'text-slate-900') => (
     <div className="card px-4 py-3">
       <div className="text-xs text-slate-500">{label}</div>
@@ -54,7 +62,7 @@ export default async function CampaignDetail({ params }: { params: { id: string 
             Assunto: <span className="text-slate-700">{campaign.subject}</span>
           </p>
         </div>
-        <CampaignControls campaign={campaign} pending={s.pending ?? 0} sentCount={s.sent ?? 0} />
+        <CampaignControls campaign={campaign} pending={s.pending ?? 0} sentCount={s.sent ?? 0} accounts={accounts ?? []} />
       </div>
 
       <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mb-6">
@@ -71,6 +79,7 @@ export default async function CampaignDetail({ params }: { params: { id: string 
           <h2 className="font-semibold text-slate-900 mb-2">Configuração de envio</h2>
           <dl className="text-sm space-y-1 text-slate-600">
             <div className="flex justify-between"><dt>Remetente</dt><dd className="text-slate-800">{campaign.from_name || '—'}</dd></div>
+            <div className="flex justify-between"><dt>Conta de envio</dt><dd className="text-slate-800">{sendAccount}</dd></div>
             <div className="flex justify-between"><dt>Limite por dia</dt><dd className="text-slate-800">{campaign.daily_limit}</dd></div>
             <div className="flex justify-between"><dt>Intervalo entre envios</dt><dd className="text-slate-800">{campaign.send_interval_seconds}s</dd></div>
             <div className="flex justify-between"><dt>Enviados hoje</dt><dd className="text-slate-800">{campaign.sent_today}</dd></div>

@@ -48,6 +48,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (typeof body.send_interval_seconds === 'number')
       update.send_interval_seconds = Math.max(1, body.send_interval_seconds);
     if (typeof body.track_opens === 'boolean') update.track_opens = body.track_opens;
+    if ('gmail_account_id' in body)
+      update.gmail_account_id = body.gmail_account_id ? body.gmail_account_id : null;
   }
 
   const { error } = await supabase.from('mail_campaigns').update(update).eq('id', params.id);

@@ -26,6 +26,8 @@ export async function POST(req: Request) {
       daily_limit: Number(body.daily_limit) || 200,
       send_interval_seconds: Math.max(1, Number(body.send_interval_seconds) || 90),
       track_opens: body.track_opens === false ? false : true,
+      gmail_account_id:
+        typeof body.gmail_account_id === 'string' && body.gmail_account_id ? body.gmail_account_id : null,
       status: 'draft',
     })
     .select('id')
