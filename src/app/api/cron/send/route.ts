@@ -55,7 +55,7 @@ async function handle(req: Request) {
       const signature = personalize(job.account_signature || '', vars);
       const unsubscribeUrl = `${base}/api/unsubscribe?c=${job.tracking_id}`;
       const pixelUrl = job.track_opens ? `${base}/api/track/${job.tracking_id}` : undefined;
-      const { html, text } = renderEmail({ bodyHtml: body, signatureHtml: signature, pixelUrl, unsubscribeUrl });
+      const { html, text } = renderEmail({ bodyHtml: body, signatureHtml: signature, pixelUrl });
 
       const info = await entry.t.sendMail({
         from: entry.from,

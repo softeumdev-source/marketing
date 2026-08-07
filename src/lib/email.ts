@@ -6,12 +6,21 @@ function esc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-function block(s: string): string {
-  return looksLikeHtml(s)
-    ? s
-    : `<div style="white-space:pre-wrap;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#111">${esc(
-        s
-      )}</div>`;
+// Converts plain text into real HTML paragraphs so it renders cleanly (1:1 look)
+// in every client. Blank lines -> new paragraph; single newline -> <br>.
+function textToParagraphs(s: string): string {
+  const escaped = esc(s.replace(/\r\n/g, '\n')).trim();
+  if (!escaped) return '';
+  return escaped
+    .split(/\n{2,}/)
+    .map(
+      (p) =>
+        `<p style="margin:0 0 15px 0;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#222222">${p.replace(
+          /\n/g,
+          '<br/>'
+        )}</p>`
+    )
+    .join('');
 }
 
 function stripHtml(s: string): string {
@@ -28,40 +37,33 @@ function stripHtml(s: string): string {
     .trim();
 }
 
-// Builds the multipart email: HTML + plaintext alternative, with an optional
-// auto-appended signature, an unsubscribe footer, and an optional tracking pixel.
+// Builds a clean, personal (1:1-looking) email: HTML + plaintext alternative,
+// with the account signature appended and an optional tracking pixel.
+// The unsubscribe mechanism is carried by the List-Unsubscribe header (set in the
+// send route) — no visible marketing footer, to keep the personal look.
 export function renderEmail(opts: {
   bodyHtml: string; // already personalized (plain text or HTML)
   signatureHtml?: string;
   pixelUrl?: string; // include only when open-tracking is enabled
-  unsubscribeUrl: string;
 }): { html: string; text: string } {
-  const bodyBlock = block(opts.bodyHtml);
+  const bodyContent = looksLikeHtml(opts.bodyHtml)
+    ? opts.bodyHtml
+    : textToParagraphs(opts.bodyHtml);
 
-  const sig =
-    opts.signatureHtml && opts.signatureHtml.trim()
-      ? `<div style="margin-top:16px;padding-top:12px;border-top:1px solid #eaeaea">${block(
-          opts.signatureHtml
-        )}</div>`
-      : '';
-
-  const unsub = `<div style="margin-top:20px;font-size:12px;color:#9aa0a6;font-family:Arial,Helvetica,sans-serif">Se não quiser mais receber estes emails, <a href="${opts.unsubscribeUrl}" style="color:#9aa0a6">clique aqui para descadastrar</a>.</div>`;
+  const sigRaw = (opts.signatureHtml || '').trim();
+  const sigContent = sigRaw
+    ? `<div style="margin-top:6px">${looksLikeHtml(sigRaw) ? sigRaw : textToParagraphs(sigRaw)}</div>`
+    : '';
 
   const pixel = opts.pixelUrl
     ? `<img src="${opts.pixelUrl}" width="1" height="1" alt="" style="display:none;border:0;width:1px;height:1px" />`
     : '';
 
-  const html = `<!doctype html><html><body style="margin:0;padding:0">${bodyBlock}${sig}${unsub}${pixel}</body></html>`;
+  const html = `<!doctype html><html><body style="margin:0;padding:0;background:#ffffff">${bodyContent}${sigContent}${pixel}</body></html>`;
 
-  const textBody = looksLikeHtml(opts.bodyHtml) ? stripHtml(opts.bodyHtml) : opts.bodyHtml;
-  const textSig = opts.signatureHtml
-    ? looksLikeHtml(opts.signatureHtml)
-      ? stripHtml(opts.signatureHtml)
-      : opts.signatureHtml
-    : '';
-  const text = [textBody, textSig, `Para não receber mais estes emails: ${opts.unsubscribeUrl}`]
-    .filter((p) => p && p.trim())
-    .join('\n\n');
+  const textBody = looksLikeHtml(opts.bodyHtml) ? stripHtml(opts.bodyHtml) : opts.bodyHtml.trim();
+  const textSig = sigRaw ? (looksLikeHtml(sigRaw) ? stripHtml(sigRaw) : sigRaw) : '';
+  const text = [textBody, textSig].filter((p) => p && p.trim()).join('\n\n');
 
   return { html, text };
 }
