@@ -4,6 +4,7 @@ import { simpleParser } from 'mailparser';
 export type ScanResult = {
   bounces: { email: string; reason: string }[];
   replies: { email: string; snippet: string }[];
+  scanned: number;
 };
 
 const DAEMON_RE = /(mailer-daemon|postmaster|mail delivery subsystem)/i;
@@ -36,7 +37,7 @@ function isHardBounce(raw: string): boolean {
 }
 
 export async function scanAccount(user: string, pass: string): Promise<ScanResult> {
-  const result: ScanResult = { bounces: [], replies: [] };
+  const result: ScanResult = { bounces: [], replies: [], scanned: 0 };
   const client = new ImapFlow({
     host: 'imap.gmail.com',
     port: 993,
@@ -55,6 +56,7 @@ export async function scanAccount(user: string, pass: string): Promise<ScanResul
 
     for await (const msg of client.fetch(uids, { source: true, envelope: true }, { uid: true })) {
       try {
+        result.scanned++;
         const raw = msg.source ? msg.source.toString('utf8') : '';
         const parsed = await simpleParser(msg.source as Buffer);
         const fromAddr =

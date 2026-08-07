@@ -30,20 +30,35 @@ async function handle(req: Request) {
 
   let bounced = 0;
   let replied = 0;
+  const details: unknown[] = [];
 
   for (const a of accounts) {
     try {
       const pass = decrypt(a.app_password_enc);
       const res = await scanAccount(a.email, pass);
-      for (const b of res.bounces) bounced += await markBounced(b.email, b.reason);
-      for (const r of res.replies) replied += await markReplied(r.email, r.snippet);
+      let matchedReplies = 0;
+      let matchedBounces = 0;
+      for (const b of res.bounces) matchedBounces += await markBounced(b.email, b.reason);
+      for (const r of res.replies) matchedReplies += await markReplied(r.email, r.snippet);
+      bounced += matchedBounces;
+      replied += matchedReplies;
       await touchScan(a.id);
-    } catch {
-      // skip account on connection/parse errors
+      details.push({
+        email: a.email,
+        ok: true,
+        scanned: res.scanned,
+        repliesFound: res.replies.length,
+        repliesMatched: matchedReplies,
+        bouncesFound: res.bounces.length,
+        bouncesMatched: matchedBounces,
+        sampleFrom: res.replies.slice(0, 12).map((r) => r.email),
+      });
+    } catch (e: unknown) {
+      details.push({ email: a.email, ok: false, error: e instanceof Error ? e.message : String(e) });
     }
   }
 
-  return NextResponse.json({ accounts: accounts.length, bounced, replied });
+  return NextResponse.json({ accounts: accounts.length, bounced, replied, details });
 }
 
 export const GET = handle;
