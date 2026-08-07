@@ -15,6 +15,7 @@ export default function NewCampaign() {
     body_html: 'Olá {{primeiro_nome}},\n\n',
     daily_limit: 200,
     send_interval_seconds: 90,
+    track_opens: true,
   });
 
   function set<K extends keyof typeof form>(k: K, v: (typeof form)[K]) {
@@ -77,6 +78,10 @@ export default function NewCampaign() {
                   <input type="number" min={1} className="input" value={form.send_interval_seconds} onChange={(e) => set('send_interval_seconds', Number(e.target.value))} />
                 </div>
               </div>
+              <label className="flex items-center gap-2 text-sm text-slate-700">
+                <input type="checkbox" checked={form.track_opens} onChange={(e) => set('track_opens', e.target.checked)} />
+                Rastrear aberturas (pixel). Desligue para reduzir chance de spam.
+              </label>
               {error && <p className="text-sm text-red-600">{error}</p>}
               <div className="flex justify-end gap-2 pt-2">
                 <button type="button" className="btn-ghost" onClick={() => setOpen(false)}>Cancelar</button>

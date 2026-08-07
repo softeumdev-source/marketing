@@ -15,6 +15,7 @@ export async function POST(req: Request) {
   const email = String(body.email || '').trim().toLowerCase();
   const password = String(body.password || '').replace(/\s+/g, '');
   const display_name = String(body.display_name || '').trim();
+  const signature_html = String(body.signature_html || '');
   const daily_limit = Number(body.daily_limit) || 400;
 
   if (!email || !password) {
@@ -35,6 +36,7 @@ export async function POST(req: Request) {
     .insert({
       email,
       display_name,
+      signature_html,
       app_password_enc: encrypt(password),
       daily_limit,
       status: 'active',

@@ -10,10 +10,12 @@ export type ClaimRow = {
   subject: string;
   body_html: string;
   from_name: string;
+  track_opens: boolean;
   account_id: string;
   account_email: string;
   account_password_enc: string;
   account_display_name: string;
+  account_signature: string;
 };
 
 export async function claimNext(): Promise<ClaimRow | null> {

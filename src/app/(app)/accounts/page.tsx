@@ -8,7 +8,7 @@ export default async function AccountsPage() {
   const supabase = createClient();
   const { data: accounts } = await supabase
     .from('mail_gmail_accounts')
-    .select('id,email,display_name,status,sent_today,daily_limit,last_error')
+    .select('id,email,display_name,status,sent_today,daily_limit,last_error,signature_html')
     .order('created_at', { ascending: true });
 
   return (

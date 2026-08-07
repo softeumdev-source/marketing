@@ -25,6 +25,7 @@ export async function POST(req: Request) {
       from_name: String(body.from_name || '').trim(),
       daily_limit: Number(body.daily_limit) || 200,
       send_interval_seconds: Math.max(1, Number(body.send_interval_seconds) || 90),
+      track_opens: body.track_opens === false ? false : true,
       status: 'draft',
     })
     .select('id')

@@ -3,7 +3,8 @@ import { WORKER_SECRET } from '@/lib/secrets';
 import { claimNext, markSent, markFailed, type ClaimRow } from '@/lib/worker-db';
 import { decrypt } from '@/lib/crypto';
 import { makeTransport } from '@/lib/mailer';
-import { personalize, buildHtml } from '@/lib/personalize';
+import { personalize } from '@/lib/personalize';
+import { renderEmail } from '@/lib/email';
 import type { Transporter } from 'nodemailer';
 
 export const runtime = 'nodejs';
@@ -50,14 +51,22 @@ async function handle(req: Request) {
 
       const vars = { nome: job.contact_name, email: job.contact_email };
       const subject = personalize(job.subject, vars);
-      const bodyText = personalize(job.body_html, vars);
-      const html = buildHtml(bodyText, `${base}/api/track/${job.tracking_id}`);
+      const body = personalize(job.body_html, vars);
+      const signature = personalize(job.account_signature || '', vars);
+      const unsubscribeUrl = `${base}/api/unsubscribe?c=${job.tracking_id}`;
+      const pixelUrl = job.track_opens ? `${base}/api/track/${job.tracking_id}` : undefined;
+      const { html, text } = renderEmail({ bodyHtml: body, signatureHtml: signature, pixelUrl, unsubscribeUrl });
 
       const info = await entry.t.sendMail({
         from: entry.from,
         to: job.contact_email,
         subject,
         html,
+        text,
+        headers: {
+          'List-Unsubscribe': `<${unsubscribeUrl}>, <mailto:${job.account_email}?subject=unsubscribe>`,
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        },
       });
       await markSent(job.contact_id, info.messageId || '');
       sent++;

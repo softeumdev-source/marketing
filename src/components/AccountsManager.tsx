@@ -11,11 +11,69 @@ type Account = {
   sent_today: number;
   daily_limit: number;
   last_error: string | null;
+  signature_html: string;
 };
+
+function SignatureEditor({ account }: { account: Account }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState(account.signature_html || '');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  async function save() {
+    setSaving(true);
+    setSaved(false);
+    await fetch(`/api/accounts/${account.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ signature_html: value }),
+    });
+    setSaving(false);
+    setSaved(true);
+    router.refresh();
+  }
+
+  return (
+    <div className="mt-3 border-t border-slate-100 pt-3">
+      <button
+        className="text-xs font-medium text-brand-600 hover:text-brand-700"
+        onClick={() => setOpen((o) => !o)}
+      >
+        ✍️ Assinatura {account.signature_html ? '(configurada)' : '(nenhuma)'} {open ? '▲' : '▼'}
+      </button>
+      {open && (
+        <div className="mt-2">
+          <textarea
+            className="input min-h-[90px] text-xs"
+            placeholder={'Atenciosamente,\nDiiego Martins\nSofteum · (47) 98801-8335'}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+          />
+          <p className="text-[11px] text-slate-400 mt-1">
+            Texto ou HTML. É anexada automaticamente no rodapé de todo email desta conta.
+          </p>
+          <div className="mt-2 flex items-center gap-2">
+            <button className="btn-primary text-xs py-1" onClick={save} disabled={saving}>
+              {saving ? 'Salvando…' : 'Salvar assinatura'}
+            </button>
+            {saved && <span className="text-xs text-green-600">Salvo!</span>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function AccountsManager({ accounts }: { accounts: Account[] }) {
   const router = useRouter();
-  const [form, setForm] = useState({ email: '', password: '', display_name: '', daily_limit: 400 });
+  const [form, setForm] = useState({
+    email: '',
+    password: '',
+    display_name: '',
+    daily_limit: 400,
+    signature_html: '',
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');
@@ -41,7 +99,7 @@ export default function AccountsManager({ accounts }: { accounts: Account[] }) {
       return;
     }
     setOk('Conta conectada com sucesso!');
-    setForm({ email: '', password: '', display_name: '', daily_limit: 400 });
+    setForm({ email: '', password: '', display_name: '', daily_limit: 400, signature_html: '' });
     router.refresh();
   }
 
@@ -86,6 +144,11 @@ export default function AccountsManager({ accounts }: { accounts: Account[] }) {
             <input className="input" type="number" min={1} value={form.daily_limit} onChange={(e) => set('daily_limit', Number(e.target.value))} />
           </div>
         </div>
+        <div>
+          <label className="label">Assinatura (opcional)</label>
+          <textarea className="input min-h-[80px] text-xs" value={form.signature_html} onChange={(e) => set('signature_html', e.target.value)} placeholder={'Atenciosamente,\nDiiego Martins\nSofteum · (47) 98801-8335'} />
+          <p className="text-[11px] text-slate-400 mt-1">Anexada automaticamente no rodapé de todo email. Texto ou HTML.</p>
+        </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
         {ok && <p className="text-sm text-green-600">{ok}</p>}
         <button className="btn-primary w-full" disabled={loading}>
@@ -118,6 +181,7 @@ export default function AccountsManager({ accounts }: { accounts: Account[] }) {
               </button>
               <button className="btn-danger text-xs py-1" onClick={() => remove(a.id)}>Remover</button>
             </div>
+            <SignatureEditor account={a} />
           </div>
         ))}
       </div>

@@ -15,6 +15,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     update.last_error = null;
   }
   if (typeof body.daily_limit === 'number') update.daily_limit = body.daily_limit;
+  if (typeof body.signature_html === 'string') update.signature_html = body.signature_html;
 
   const { error } = await supabase.from('mail_gmail_accounts').update(update).eq('id', params.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
