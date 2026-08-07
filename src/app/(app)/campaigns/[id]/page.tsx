@@ -54,7 +54,7 @@ export default async function CampaignDetail({ params }: { params: { id: string 
             Assunto: <span className="text-slate-700">{campaign.subject}</span>
           </p>
         </div>
-        <CampaignControls campaignId={campaign.id} status={campaign.status} pending={s.pending ?? 0} />
+        <CampaignControls campaign={campaign} pending={s.pending ?? 0} sentCount={s.sent ?? 0} />
       </div>
 
       <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mb-6">
