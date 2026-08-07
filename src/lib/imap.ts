@@ -49,7 +49,7 @@ export async function scanAccount(user: string, pass: string): Promise<ScanResul
   await client.connect();
   const lock = await client.getMailboxLock('INBOX');
   try {
-    const since = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     let uids = (await client.search({ since }, { uid: true })) || [];
     if (!uids.length) return result;
     if (uids.length > 250) uids = uids.slice(-250);
