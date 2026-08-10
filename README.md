@@ -79,12 +79,19 @@ Sem esse filtro a taxa de abertura fica inflada várias vezes.
 
 ## Configurações de envio
 
+**Política em uso: horário comercial, dias úteis** — 08:00 às 18:00, de segunda a
+sexta, no fuso `America/Sao_Paulo`. Nada é disparado de madrugada nem no fim de
+semana. Fora da janela o painel mostra um aviso e o worker sai sem enviar.
+
+Isso não reduz o volume: a janela de 10h comporta ~360 envios com intervalo de
+90s, acima do limite diário de 300.
+
 Em **Configurações** (`/configuracoes`):
 
 | Opção | Para que serve |
 |---|---|
-| Janela de envio | Só envia dentro do horário (ex. 08:00–20:00). Horários iguais = 24h |
-| Somente dias úteis | Pausa sábado e domingo |
+| Janela de envio | Só envia dentro do horário (padrão 08:00–18:00). Horários iguais = 24h |
+| Somente dias úteis | Pausa sábado e domingo (ligado por padrão) |
 | Variação aleatória | Segundos aleatórios somados ao intervalo, para o envio não ficar robótico |
 | Tentativas por contato | Falhas temporárias são repetidas com intervalo crescente (5, 10, 20 min…) |
 | Ignorar aberturas nos primeiros N seg | Filtro de pré-carregamento descrito acima |
