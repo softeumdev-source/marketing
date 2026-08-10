@@ -11,6 +11,8 @@ const NAV = [
   { href: '/caixa-respondidos', label: 'Responderam', icon: '💬' },
   { href: '/caixa-invalidos', label: 'Inválidos', icon: '⛔' },
   { href: '/descadastrados', label: 'Descadastrados', icon: '🚫' },
+  { href: '/bloqueados', label: 'Lista de bloqueio', icon: '🛡️' },
+  { href: '/configuracoes', label: 'Configurações', icon: '⚙️' },
 ];
 
 export default function Sidebar({ email }: { email: string }) {

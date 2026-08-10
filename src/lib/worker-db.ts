@@ -18,6 +18,28 @@ export type ClaimRow = {
   account_signature: string;
 };
 
+export type ScanAccount = {
+  id: string;
+  email: string;
+  app_password_enc: string;
+  last_scan_uid: number | null;
+  last_scan_at: string | null;
+};
+
+/**
+ * Seconds until the next e-mail may go out.
+ *  - `null` means there is nothing to send at all right now (queue empty,
+ *    campaign paused, daily cap reached or outside the sending window), so the
+ *    worker can return immediately instead of holding the function open.
+ *  - `0` means a send is due now.
+ */
+export async function nextReadyIn(): Promise<number | null> {
+  const sb = createAnonClient();
+  const { data, error } = await sb.rpc('mail_next_ready_in', { p_secret: WORKER_SECRET });
+  if (error) throw new Error(error.message);
+  return data === null || data === undefined ? null : Number(data);
+}
+
 export async function claimNext(): Promise<ClaimRow | null> {
   const sb = createAnonClient();
   const { data, error } = await sb.rpc('mail_claim_next', { p_secret: WORKER_SECRET });
@@ -44,13 +66,12 @@ export async function markFailed(contactId: string, err: string): Promise<void> 
   });
 }
 
-export async function scanAccounts(): Promise<
-  { id: string; email: string; app_password_enc: string }[]
-> {
+/** Active accounts, least-recently-scanned first (round-robin friendly). */
+export async function scanAccounts(): Promise<ScanAccount[]> {
   const sb = createAnonClient();
   const { data, error } = await sb.rpc('mail_scan_accounts', { p_secret: WORKER_SECRET });
   if (error) throw new Error(error.message);
-  return (data as { id: string; email: string; app_password_enc: string }[]) || [];
+  return (data as ScanAccount[]) || [];
 }
 
 export async function markBounced(email: string, reason: string): Promise<number> {
@@ -73,7 +94,34 @@ export async function markReplied(email: string, snippet: string): Promise<numbe
   return (data as number) || 0;
 }
 
-export async function touchScan(accountId: string): Promise<void> {
+/**
+ * Persists the IMAP cursor for an account. Passing `uid` moves the cursor
+ * forward so the next scan only reads new messages; passing `error` records
+ * why a scan failed (and still advances `last_scan_at`, so one broken account
+ * cannot starve the others).
+ */
+export async function touchScan(
+  accountId: string,
+  uid?: number | null,
+  error?: string | null
+): Promise<void> {
   const sb = createAnonClient();
-  await sb.rpc('mail_touch_scan', { p_secret: WORKER_SECRET, p_account_id: accountId });
+  await sb.rpc('mail_touch_scan', {
+    p_secret: WORKER_SECRET,
+    p_account_id: accountId,
+    p_uid: uid ?? null,
+    p_error: error ?? null,
+  });
+}
+
+/** Narrows a list of inbound senders down to addresses that are our contacts. */
+export async function knownContacts(emails: string[]): Promise<Set<string>> {
+  if (!emails.length) return new Set();
+  const sb = createAnonClient();
+  const { data, error } = await sb.rpc('mail_known_contacts', {
+    p_secret: WORKER_SECRET,
+    p_emails: emails,
+  });
+  if (error) throw new Error(error.message);
+  return new Set(((data as { email: string }[]) || []).map((r) => r.email.toLowerCase()));
 }
