@@ -1,5 +1,20 @@
+// Whole-name placeholders a spreadsheet leaves behind instead of a real name.
+const PLACEHOLDER_NAMES =
+  /^(sem ?nome|nao ?informado|não ?informado|nao ?tem|não ?tem|nome|cliente|contato|empresa|company ?name|desconhecido|null|nulo|n\/?a|teste)$/i;
+
+// Imported lists carry junk in the name column: "-", ".", "*", "TESTE".
+// Greeting a lead with "Olá -," is worse than not naming them at all.
+export function cleanName(name: string): string {
+  const cleaned = (name || '')
+    .trim()
+    .split(/\s+/)
+    .filter((token) => /\p{L}{2}/u.test(token) && !/^testes?$/i.test(token))
+    .join(' ');
+  return PLACEHOLDER_NAMES.test(cleaned) ? '' : cleaned;
+}
+
 export function firstName(name: string): string {
-  return (name || '').trim().split(/\s+/)[0] || '';
+  return cleanName(name).split(/\s+/)[0] || '';
 }
 
 // Replaces {{nome}}, {{primeiro_nome}}, {{email}} (case-insensitive) in a template.
@@ -8,14 +23,22 @@ export function personalize(
   vars: { nome?: string; email?: string }
 ): string {
   const map: Record<string, string> = {
-    nome: vars.nome || '',
+    nome: cleanName(vars.nome || ''),
     primeiro_nome: firstName(vars.nome || ''),
     email: vars.email || '',
   };
-  return (tpl || '').replace(/\{\{\s*([a-zA-Z_]+)\s*\}\}/g, (_m, k: string) => {
-    const key = k.toLowerCase();
-    return key in map ? map[key] : _m;
-  });
+  let emptied = false;
+  const out = (tpl || '').replace(
+    /\{\{\s*([a-zA-Z_]+)\s*\}\}/g,
+    (_m, k: string) => {
+      const key = k.toLowerCase();
+      if (!(key in map)) return _m;
+      if (map[key] === '') emptied = true;
+      return map[key];
+    }
+  );
+  // An empty variable leaves the punctuation stranded ("Olá , tudo bem?").
+  return emptied ? out.replace(/[ \t]+([,.!?;:])/g, '$1') : out;
 }
 
 // Wrap plaintext bodies in minimal HTML and append the tracking pixel.
