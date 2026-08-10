@@ -103,6 +103,14 @@ export async function scanAccountIncremental(opts: {
     secure: true,
     auth: { user, pass },
     logger: false,
+    // This is a one-shot scan, never a long-lived listener. Without this
+    // ImapFlow puts the connection into IDLE right after selecting the mailbox,
+    // and tearing that down again cost ~20s per account — enough on its own to
+    // blow the request budget even when there was no new mail to read.
+    disableAutoIdle: true,
+    connectionTimeout: 15_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 20_000,
   });
 
   await client.connect();
@@ -238,9 +246,20 @@ export async function scanAccountIncremental(opts: {
     // envelopes next run is harmless; skipping a bounce is not.
     out.highestUid = capped ? lastHandledUid : maxHeadUid;
   } finally {
-    lock.release();
     try {
-      await client.logout();
+      lock.release();
+    } catch {
+      /* ignore */
+    }
+    // Bound the teardown: a polite LOGOUT is a round trip, and we must not let
+    // it eat into the next account's time. Drop the socket if it drags.
+    try {
+      await Promise.race([client.logout(), new Promise((r) => setTimeout(r, 3_000))]);
+    } catch {
+      /* ignore */
+    }
+    try {
+      client.close();
     } catch {
       /* ignore */
     }

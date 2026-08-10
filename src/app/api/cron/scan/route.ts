@@ -57,6 +57,7 @@ async function handle(req: Request) {
       continue;
     }
 
+    const accountStarted = Date.now();
     try {
       const pass = decrypt(a.app_password_enc);
       const res = await scanAccountIncremental({
@@ -79,6 +80,7 @@ async function handle(req: Request) {
       details.push({
         email: a.email,
         ok: true,
+        ms: Date.now() - accountStarted,
         novos: res.scanned,
         baixados: res.inspected,
         bouncesEncontrados: res.bounces.length,
@@ -93,7 +95,7 @@ async function handle(req: Request) {
       // Record the failure and still move last_scan_at forward, so a single
       // broken account cannot starve the others in the round-robin.
       await touchScan(a.id, null, msg).catch(() => {});
-      details.push({ email: a.email, ok: false, error: msg });
+      details.push({ email: a.email, ok: false, ms: Date.now() - accountStarted, error: msg });
     }
   }
 
