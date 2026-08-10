@@ -15,6 +15,7 @@ type ImportResult = {
   duplicates_in_file: number;
   already_in_system: number;
   suppressed: number;
+  blocked_domain: number;
 };
 
 /**
@@ -76,6 +77,7 @@ const EMPTY: ImportResult = {
   duplicates_in_file: 0,
   already_in_system: 0,
   suppressed: 0,
+  blocked_domain: 0,
 };
 
 export default function ImportPanel({ campaignId }: { campaignId: string }) {
@@ -128,6 +130,7 @@ export default function ImportPanel({ campaignId }: { campaignId: string }) {
         acc.duplicates_in_file += json.duplicates_in_file ?? 0;
         acc.already_in_system += json.already_in_system ?? 0;
         acc.suppressed += json.suppressed ?? 0;
+        acc.blocked_domain += json.blocked_domain ?? 0;
       }
 
       // Duplicates the browser already collapsed count too.
@@ -202,6 +205,11 @@ export default function ImportPanel({ campaignId }: { campaignId: string }) {
             <li>{result.duplicates_in_file.toLocaleString('pt-BR')} repetidos no arquivo</li>
             <li>{result.already_in_system.toLocaleString('pt-BR')} já existiam no sistema</li>
             <li>{result.suppressed.toLocaleString('pt-BR')} bloqueados (descadastrados / inválidos)</li>
+            {result.blocked_domain > 0 && (
+              <li className="text-amber-700">
+                {result.blocked_domain.toLocaleString('pt-BR')} de domínio bloqueado (concorrentes)
+              </li>
+            )}
             <li>{result.invalid.toLocaleString('pt-BR')} endereços inválidos</li>
           </ul>
         </div>
