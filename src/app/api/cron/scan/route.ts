@@ -14,10 +14,13 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-// Leave headroom under maxDuration so we always return a real answer instead of
-// being killed mid-flight (which is what used to happen on every single run).
-const BUDGET_MS = 40_000;
-const PER_ACCOUNT_MIN_MS = 8_000;
+// The caller (pg_net) gives up at 55s and Vercel kills the function at 60s, so
+// the whole request has to land well inside that. 28s leaves room for a slow
+// IMAP handshake on the last account without overrunning either limit.
+const BUDGET_MS = 28_000;
+// Don't start another account unless there is enough time to do something useful
+// with it — starting one with a couple of seconds left is how a run overruns.
+const PER_ACCOUNT_MIN_MS = 12_000;
 
 function authorized(req: Request): boolean {
   const url = new URL(req.url);

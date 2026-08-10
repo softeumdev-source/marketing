@@ -85,8 +85,8 @@ export async function scanAccountIncremental(opts: {
   filterKnown: (emails: string[]) => Promise<Set<string>>;
 }): Promise<ScanOutcome> {
   const { user, pass, sinceUid, deadline, filterKnown } = opts;
-  const maxMessages = opts.maxMessages ?? 200;
-  const maxCandidates = opts.maxCandidates ?? 40;
+  const maxMessages = opts.maxMessages ?? 120;
+  const maxCandidates = opts.maxCandidates ?? 25;
 
   const out: ScanOutcome = {
     scanned: 0,
@@ -128,6 +128,9 @@ export async function scanAccountIncremental(opts: {
     if (!uids.length) return out;
 
     // ---- Phase 1: envelopes only -----------------------------------------
+    // The deadline is enforced inside the loop: a large backlog of envelopes can
+    // outlast the budget on its own, and overrunning here is what used to push
+    // the whole request past the caller's timeout.
     type Head = { uid: number; from: string; subject: string };
     const heads: Head[] = [];
     for await (const msg of client.fetch(uids, { envelope: true }, { uid: true })) {
@@ -136,10 +139,16 @@ export async function scanAccountIncremental(opts: {
         from: (msg.envelope?.from?.[0]?.address || '').toLowerCase(),
         subject: msg.envelope?.subject || '',
       });
+      if (Date.now() > deadline) {
+        out.truncated = true;
+        break;
+      }
     }
     if (!heads.length) return out;
     out.scanned = heads.length;
 
+    // UIDs are fetched in ascending order, so the last one collected is the
+    // furthest point we have fully classified.
     const maxHeadUid = heads.reduce((m, h) => (h.uid > m ? h.uid : m), sinceUid);
 
     const dsn = heads.filter(
@@ -217,6 +226,12 @@ export async function scanAccountIncremental(opts: {
         // Unparseable message: skip it, but still let the cursor pass it.
       }
       lastHandledUid = Math.max(lastHandledUid, msg.uid);
+
+      if (Date.now() > deadline) {
+        capped = true; // stop here; the cursor stays at lastHandledUid
+        out.truncated = true;
+        break;
+      }
     }
 
     // Only claim progress up to what we actually handled. Re-examining a few
