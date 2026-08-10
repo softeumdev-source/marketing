@@ -20,6 +20,9 @@ Aplicadas em 10/08/2026:
 | `20260810134942_mail_next_ready_in` | `mail_next_ready_in` (quanto falta para o próximo envio) |
 | `20260810135004_..._fix_null_last_send` | corrige conta que nunca enviou ficar invisível no cálculo |
 | `20260810135907_mail_campaign_stats_v2` | `mail_campaign_stats` com descadastrados, retentativas e prefetch |
+| `20260810141500_mail_deterministic_jitter` | `mail_jitter()`: jitter derivado de `(conta, último envio)` para `claim_next` e `next_ready_in` calcularem o mesmo intervalo |
+| `20260810142600_mail_pin_function_search_path` | fixa `search_path` nas funções novas (linter 0011) |
+| `20260810150200_mail_default_business_hours` | política de envio: 08:00–18:00, dias úteis (default da coluna + linha atual) |
 
 ## Tabelas
 
