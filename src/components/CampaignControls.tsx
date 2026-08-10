@@ -77,8 +77,20 @@ export default function CampaignControls({
           ⏸ Pausar
         </button>
       )}
+      {/* A campanha fica 'completed' quando a fila zera. Se depois disso entrarem
+          contatos novos (uma importação, por exemplo), basta retomar: 'Rodar
+          novamente' requeueria também quem já recebeu, causando reenvio. */}
+      {status === 'completed' && pending > 0 && (
+        <button className="btn-primary" disabled={loading} onClick={() => act('start')}>
+          ▶ Enviar os {pending.toLocaleString('pt-BR')} pendentes
+        </button>
+      )}
       {status === 'completed' && (
-        <button className="btn-primary" disabled={loading} onClick={restart}>
+        <button
+          className={pending > 0 ? 'btn-ghost' : 'btn-primary'}
+          disabled={loading}
+          onClick={restart}
+        >
           🔁 Rodar novamente
         </button>
       )}
